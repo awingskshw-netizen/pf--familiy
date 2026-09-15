@@ -284,7 +284,7 @@
             cursor: default;
         }
 
-        /* 20개 숫자 기억력 게임 스타일 (신규 추가) */
+        /* 20개 숫자 기억력 게임 스타일 */
         .memory-box { text-align: center; }
         .memory-grid {
             display: grid;
@@ -397,7 +397,7 @@
             <div class="puzzle-board" id="puzzle-board"></div>
         </div>
 
-        <!-- 숫자 20개 기억력 테스트 게임 (신규 추가 영역) -->
+        <!-- 숫자 20개 기억력 테스트 게임 -->
         <div class="section memory-box">
             <h2>🧠 ¡Reto de Memoria (1-20)!</h2>
             <div id="memory-status" style="font-size: 0.9rem; font-weight: bold; color: #555; margin-bottom: 5px;">
@@ -699,7 +699,7 @@
             actionBtn.style.display = "none";
             
             memorySequence = [...Array(20).keys()].map(x => x + 1);
-            memorySequence.sort(() => Math.random() - 0.5);
+            memorySequence.sort(() => 0.5 - Math.random());
             
             isMemorizing = true;
             statusText.innerText = "👀 ¡Memoriza dónde están los números! (Se ocultarán en 5 segundos)";
@@ -733,6 +733,8 @@
             const clickedNum = memorySequence[idx];
             const targetNum = userStep + 1;
 
+            if (tiles[idx].classList.contains('correct')) return;
+
             if (clickedNum === targetNum) {
                 tiles[idx].textContent = clickedNum;
                 tiles[idx].classList.add('correct');
@@ -745,15 +747,29 @@
                     actionBtn.innerText = "¡Jugar de nuevo!";
                 }
             } else {
-                statusText.style.color = "#ff4757";
-                statusText.innerText = `❌ ¡Te equivocaste! Debías buscar el número ${targetNum}.`;
-                
-                tiles.forEach((t, i) => {
-                    t.textContent = memorySequence[i];
-                });
                 isMemorizing = true;
-                actionBtn.style.display = "block";
-                actionBtn.innerText = "¡Volver a intentar!";
+                statusText.style.color = "#ff4757";
+                statusText.innerText = `❌ ¡Te equivocaste! Era el número ${targetNum}. ¡Mira bien de nuevo (5s)!`;
+
+                tiles.forEach((t, i) => {
+                    if (!t.classList.contains('correct')) {
+                        t.textContent = memorySequence[i];
+                        t.classList.add('active');
+                    }
+                });
+
+                setTimeout(() => {
+                    isMemorizing = false;
+                    statusText.style.color = "#2ed573";
+                    statusText.innerText = `🎯 ¡Continúa buscando el número ${userStep + 1}!`;
+
+                    tiles.forEach((t, i) => {
+                        if (!t.classList.contains('correct')) {
+                            t.textContent = "?";
+                            t.classList.remove('active');
+                        }
+                    });
+                }, 5000);
             }
         }
     </script>
