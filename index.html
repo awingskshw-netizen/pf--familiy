@@ -24,7 +24,7 @@
             overflow: hidden;
         }
         
-        /* 상단 날짜 & 날씨 (크기 축소) */
+        /* 상단 날짜 & 날씨 */
         .header-banner {
             background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
             border-radius: 12px;
@@ -149,6 +149,84 @@
             color: #555;
             font-weight: bold;
         }
+
+        /* 5초 맞추기 게임 스타일 */
+        .timer-box {
+            text-align: center;
+        }
+        .timer-display {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 15px 0;
+            font-family: monospace;
+        }
+        .timer-btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        .timer-btn {
+            flex: 1;
+            background-color: #20bf6b;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 10px 15px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(32, 191, 107, 0.3);
+        }
+        .timer-btn.stop {
+            background-color: #eb3b5a;
+            box-shadow: 0 4px 10px rgba(235, 59, 90, 0.3);
+        }
+        .timer-btn:active { transform: scale(0.98); }
+        #timer-result {
+            margin-top: 8px;
+            font-size: 0.9rem;
+            color: #555;
+            font-weight: bold;
+        }
+
+        /* 색상 일치 순발력 게임 스타일 */
+        .color-box {
+            text-align: center;
+        }
+        .color-display {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin: 15px 0;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .color-btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        .color-game-btn {
+            flex: 1;
+            border: none;
+            border-radius: 25px;
+            padding: 10px 15px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .color-game-btn.yes { background-color: #20bf6b; }
+        .color-game-btn.no { background-color: #eb3b5a; }
+        .color-game-btn.start { background-color: #fa8231; width: 100%; margin-bottom: 10px; }
+        .color-game-btn:active { transform: scale(0.98); }
+        #color-result {
+            margin-top: 8px;
+            font-size: 0.9rem;
+            color: #555;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -163,9 +241,7 @@
         <!-- 오늘의 추억 사진 2장 (랜덤 출력) -->
         <div class="section">
             <h2>📸 Momentos en Familia</h2>
-            <div class="photos-grid" id="photos-container">
-                <!-- 자바스크립트로 사진 2장이 여기에 랜덤 로드됩니다 -->
-            </div>
+            <div class="photos-grid" id="photos-container"></div>
         </div>
 
         <!-- 오늘의 미션 뽑기 게임 -->
@@ -185,16 +261,37 @@
             <button class="dice-btn" onclick="rollDice()">¡Lanzar Dados!</button>
             <div id="dice-sum">¡Toca el botón para jugar!</div>
         </div>
+
+        <!-- 5초 맞추기 게임 (수정됨) -->
+        <div class="section timer-box">
+            <h2>⏱️ ¡Detén en el 5! (Reto de 5 segundos)</h2>
+            <div class="timer-display" id="timer-display">0.00s</div>
+            <div class="timer-btn-group">
+                <button class="timer-btn" onclick="startTimer()">¡Iniciar!</button>
+                <button class="timer-btn stop" onclick="stopTimer()">¡Detener!</button>
+            </div>
+            <div id="timer-result">¡Apunta exactamente a 5.00 segundos!</div>
+        </div>
+
+        <!-- 색상 일치 순발력 게임 -->
+        <div class="section color-box">
+            <h2>🎨 ¿Coincide el Color? (Reto de Agilidad)</h2>
+            <button class="color-game-btn start" onclick="startColorGame()">¡Iniciar Reto (10s)!</button>
+            <div class="color-display" id="color-word">¡Listo!</div>
+            <div class="color-btn-group" id="color-buttons" style="display: none;">
+                <button class="color-game-btn yes" onclick="checkColorAnswer(true)">¡Sí! (Iguales)</button>
+                <button class="color-game-btn no" onclick="checkColorAnswer(false)">¡No! (Diferentes)</button>
+            </div>
+            <div id="color-result">Aciertos: 0</div>
+        </div>
     </div>
 
     <script>
-        // 1. 오늘 날짜 스페인어 자동 표시
         const dateElement = document.getElementById('current-date');
         const today = new Date();
         const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
         dateElement.innerText = today.toLocaleDateString('es-ES', options);
 
-        // 2. 여러 사진 리스트 (사진 파일명이나 주소를 이곳에 넣어주세요)
         const photoList = [
             { url: "family1.jpg", caption: "¡chamacas! ✨" },
             { url: "family2.jpg", caption: "hermosas 🌲" },
@@ -234,15 +331,14 @@
 
         loadRandomPhotos();
 
-        // 3. 랜덤 미션 뽑기 기능
         const missions = [
-            "🤗 ¡Dale un fuerte abrazo a un miembro de la familia y dile TE AMO!",
+            "🤗 ¡Dale un fuerte abrazo a un miembro de la familia y dile ¡Te amo!",
             "😜 ¡Tómate una selfie con la cara más graciosa y muéstrala!",
-            "📚 ¡Haz 10 veces de sentadilla!",
-            "🍫 ¡Juega piedra, papel o tijera para ver quién limpia caca de lilo!",
-            "😜 ¡Nadie puede ver a cel ni ipad en la cena",
-            "📚 ¡Ver película en familia!",
-            "🍫 ¡Reto de comer alguna verdura!"
+            "📚 ¡Haz 10 sentadillas!",
+            "🍫 ¡Juega piedra, papel o tijera para ver quién limpia!",
+            "📱 ¡Nadie puede usar el celular ni iPad durante la cena!",
+            "🎬 ¡Ver una película en familia esta noche!",
+            "🥗 ¡Comer toda la verdura en el próximo plato!"
         ];
 
         function pickMission() {
@@ -252,7 +348,6 @@
             resultBox.innerText = missions[randomIndex];
         }
 
-        // 4. 주사위 굴리기 게임 기능
         const diceFaces = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
 
         function rollDice() {
@@ -260,10 +355,9 @@
             const d2 = document.getElementById('dice2');
             const sumText = document.getElementById('dice-sum');
 
-            // 굴러가는 애니메이션 효과 부여
             d1.classList.add('rolling');
             d2.classList.add('rolling');
-            sumText.innerText = "🎲 Rodando los dados...";
+            sumText.innerText = "🎲 Lanzando los dados...";
 
             setTimeout(() => {
                 d1.classList.remove('rolling');
@@ -276,8 +370,107 @@
                 d2.innerText = diceFaces[rand2];
 
                 const total = rand1 + rand2 + 2;
-                sumText.innerText = `✨ ¡Resultado total: ${total} puntos! ✨`;
-            }, 300); // 0.3초 동안 구르는 효과
+                sumText.innerText = `✨ ¡Puntuación total: ${total} puntos! ✨`;
+            }, 300);
+        }
+
+        // 5초 타이머 로직 (목표값 5로 변경됨)
+        let startTime = 0;
+        let timerInterval = null;
+        let isRunning = false;
+
+        function startTimer() {
+            if (isRunning) return;
+            isRunning = true;
+            startTime = Date.now();
+            
+            const display = document.getElementById('timer-display');
+            const resultText = document.getElementById('timer-result');
+            resultText.innerText = "¡El tiempo está corriendo...";
+            resultText.style.color = "#555";
+
+            timerInterval = setInterval(() => {
+                const elapsedTime = (Date.now() - startTime) / 1000;
+                display.innerText = elapsedTime.toFixed(2) + "s";
+            }, 10);
+        }
+
+        function stopTimer() {
+            if (!isRunning) return;
+            clearInterval(timerInterval);
+            isRunning = false;
+
+            const elapsedTime = (Date.now() - startTime) / 1000;
+            const resultText = document.getElementById('timer-result');
+            const diff = Math.abs(5 - elapsedTime); // 5초 기준으로 오차 계산
+            
+            if (diff < 0.05) {
+                resultText.style.color = "#20bf6b";
+                resultText.innerText = `🏆 ¡Increíble! ¡Exactamente 5 segundos (${elapsedTime.toFixed(2)}s)!`;
+            } else if (diff < 0.3) {
+                resultText.style.color = "#f7b731";
+                resultText.innerText = `👏 ¡Muy cerca! (${elapsedTime.toFixed(2)}s, diferencia: ${diff.toFixed(2)}s)`;
+            } else {
+                resultText.style.color = "#eb3b5a";
+                resultText.innerText = `😅 ¡Fallaste! (${elapsedTime.toFixed(2)}s, diferencia: ${diff.toFixed(2)}s)`;
+            }
+        }
+
+        const colorList = [
+            { name: "ROJO", hex: "#eb3b5a" },
+            { name: "AZUL", hex: "#4facfe" },
+            { name: "AMARILLO", hex: "#f7b731" },
+            { name: "VERDE", hex: "#20bf6b" }
+        ];
+
+        let colorScore = 0;
+        let colorGameActive = false;
+        let currentIsMatch = false;
+
+        function startColorGame() {
+            colorScore = 0;
+            colorGameActive = true;
+            document.getElementById('color-buttons').style.display = "flex";
+            document.getElementById('color-result').innerText = "¡Aciertos: 0!";
+            nextColorRound();
+
+            setTimeout(() => {
+                colorGameActive = false;
+                document.getElementById('color-buttons').style.display = "none";
+                document.getElementById('color-word').innerText = "¡Tiempo terminado!";
+                document.getElementById('color-result').innerHTML = `🎉 ¡Puntuación final: <b>${colorScore}</b> aciertos!`;
+            }, 10000);
+        }
+
+        function nextColorRound() {
+            if (!colorGameActive) return;
+
+            const wordObj = colorList[Math.floor(Math.random() * colorList.length)];
+            currentIsMatch = Math.random() < 0.5;
+            
+            let displayColorHex = wordObj.hex;
+            if (!currentIsMatch) {
+                const differentColors = colorList.filter(c => c.hex !== wordObj.hex);
+                displayColorHex = differentColors[Math.floor(Math.random() * differentColors.length)].hex;
+            }
+
+            const wordElement = document.getElementById('color-word');
+            wordElement.innerText = wordObj.name;
+            wordElement.style.color = displayColorHex;
+        }
+
+        function checkColorAnswer(userAnswer) {
+            if (!colorGameActive) return;
+
+            if (userAnswer === currentIsMatch) {
+                colorScore++;
+                document.getElementById('color-result').style.color = "#20bf6b";
+                document.getElementById('color-result').innerText = `¡Correcto! Aciertos: ${colorScore}`;
+            } else {
+                document.getElementById('color-result').style.color = "#eb3b5a";
+                document.getElementById('color-result').innerText = `¡Fallaste! Aciertos: ${colorScore}`;
+            }
+            nextColorRound();
         }
     </script>
 
