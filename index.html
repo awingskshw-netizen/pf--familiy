@@ -228,7 +228,7 @@
             font-weight: bold;
         }
 
-        /* 퍼즐 게임 스타일 추가 */
+        /* 숫자 슬라이딩 퍼즐 게임 스타일 */
         .puzzle-box {
             text-align: center;
         }
@@ -283,6 +283,52 @@
             background-color: #cccccc;
             cursor: default;
         }
+
+        /* 20개 숫자 기억력 게임 스타일 (신규 추가) */
+        .memory-box { text-align: center; }
+        .memory-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            margin: 15px 0;
+        }
+        .memory-tile {
+            background-color: #f1f2f6;
+            border: 2px solid #dfe4ea;
+            border-radius: 8px;
+            height: 45px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #2f3640;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+        }
+        .memory-tile.active {
+            background-color: #ff4757;
+            color: white;
+            transform: scale(1.05);
+        }
+        .memory-tile.correct {
+            background-color: #2ed573;
+            color: white;
+        }
+        .memory-btn {
+            background-color: #3742fa;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 10px 20px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(55, 66, 250, 0.3);
+            width: 100%;
+        }
+        .memory-btn:active { transform: scale(0.98); }
     </style>
 </head>
 <body>
@@ -341,7 +387,7 @@
             <div id="color-result">Aciertos: 0</div>
         </div>
 
-        <!-- 숫자 슬라이딩 퍼즐 게임 (신규 추가) -->
+        <!-- 숫자 슬라이딩 퍼즐 게임 -->
         <div class="section puzzle-box">
             <h2>🧩 Rompecabezas Numérico</h2>
             <div class="puzzle-info-panel">
@@ -349,6 +395,16 @@
                 <button class="puzzle-btn" onclick="shufflePuzzle()">Reiniciar Puzzle</button>
             </div>
             <div class="puzzle-board" id="puzzle-board"></div>
+        </div>
+
+        <!-- 숫자 20개 기억력 테스트 게임 (신규 추가 영역) -->
+        <div class="section memory-box">
+            <h2>🧠 ¡Reto de Memoria (1-20)!</h2>
+            <div id="memory-status" style="font-size: 0.9rem; font-weight: bold; color: #555; margin-bottom: 5px;">
+                ¡Memoriza los 20 números en orden!
+            </div>
+            <div class="memory-grid" id="memory-grid"></div>
+            <button class="memory-btn" id="memory-action-btn" onclick="startMemoryGame()">¡Iniciar Reto de 20 Números!</button>
         </div>
     </div>
 
@@ -538,13 +594,13 @@
             nextColorRound();
         }
 
-        /* 숫자 슬라이딩 퍼즐 로직 추가 */
+        /* 숫자 슬라이딩 퍼즐 로직 */
         let puzzleBoard = [];
         let puzzleMoves = 0;
 
         function initPuzzle() {
             puzzleBoard = [...Array(15).keys()].map(x => x + 1);
-            puzzleBoard.push(0); // 빈칸은 0
+            puzzleBoard.push(0);
             shufflePuzzle();
         }
 
@@ -552,7 +608,6 @@
             puzzleMoves = 0;
             updatePuzzleMoves();
             
-            // 풀 수 있는 퍼즐 상태를 만들기 위해 빈칸 기준 무작위 이동 반복
             for (let i = 0; i < 1000; i++) {
                 let emptyIdx = puzzleBoard.indexOf(0);
                 let r = Math.floor(emptyIdx / 4);
@@ -601,7 +656,6 @@
             let emptyR = Math.floor(emptyIdx / 4);
             let emptyC = emptyIdx % 4;
 
-            // 상하좌우 인접 확인
             if (Math.abs(r - emptyR) + Math.abs(c - emptyC) === 1) {
                 [puzzleBoard[emptyIdx], puzzleBoard[idx]] = [puzzleBoard[idx], puzzleBoard[emptyIdx]];
                 puzzleMoves++;
@@ -628,9 +682,80 @@
             return puzzleBoard[15] === 0;
         }
 
-        // 페이지 로드시 퍼즐 초기화 실행
         initPuzzle();
-    </script>
 
+        /* 숫자 20개 기억력 테스트 게임 로직 */
+        let memorySequence = [];
+        let userStep = 0;
+        let isMemorizing = false;
+
+        function startMemoryGame() {
+            const grid = document.getElementById('memory-grid');
+            const statusText = document.getElementById('memory-status');
+            const actionBtn = document.getElementById('memory-action-btn');
+            
+            grid.innerHTML = "";
+            userStep = 0;
+            actionBtn.style.display = "none";
+            
+            memorySequence = [...Array(20).keys()].map(x => x + 1);
+            memorySequence.sort(() => Math.random() - 0.5);
+            
+            isMemorizing = true;
+            statusText.innerText = "👀 ¡Memoriza dónde están los números! (Se ocultarán en 5 segundos)";
+            statusText.style.color = "#ff4757";
+
+            let tiles = [];
+            memorySequence.forEach((num, idx) => {
+                const tile = document.createElement('div');
+                tile.classList.add('memory-tile');
+                tile.textContent = num;
+                grid.appendChild(tile);
+                tiles.push(tile);
+            });
+
+            setTimeout(() => {
+                isMemorizing = false;
+                statusText.innerText = "🎯 ¡Encuentra y presiona los números del 1 al 20 en orden!";
+                statusText.style.color = "#2ed573";
+                
+                tiles.forEach((tile, idx) => {
+                    tile.textContent = "?";
+                    tile.onclick = () => handleMemoryClick(idx, tiles);
+                });
+            }, 5000);
+        }
+
+        function handleMemoryClick(idx, tiles) {
+            if (isMemorizing) return;
+            
+            const statusText = document.getElementById('memory-status');
+            const clickedNum = memorySequence[idx];
+            const targetNum = userStep + 1;
+
+            if (clickedNum === targetNum) {
+                tiles[idx].textContent = clickedNum;
+                tiles[idx].classList.add('correct');
+                userStep++;
+
+                if (userStep === 20) {
+                    statusText.style.color = "#3742fa";
+                    statusText.innerText = "🏆 ¡Increíble! ¡Completaste los 20 números con memoria perfecta!";
+                    actionBtn.style.display = "block";
+                    actionBtn.innerText = "¡Jugar de nuevo!";
+                }
+            } else {
+                statusText.style.color = "#ff4757";
+                statusText.innerText = `❌ ¡Te equivocaste! Debías buscar el número ${targetNum}.`;
+                
+                tiles.forEach((t, i) => {
+                    t.textContent = memorySequence[i];
+                });
+                isMemorizing = true;
+                actionBtn.style.display = "block";
+                actionBtn.innerText = "¡Volver a intentar!";
+            }
+        }
+    </script>
 </body>
 </html>
