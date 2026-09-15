@@ -227,6 +227,62 @@
             color: #555;
             font-weight: bold;
         }
+
+        /* 퍼즐 게임 스타일 추가 */
+        .puzzle-box {
+            text-align: center;
+        }
+        .puzzle-info-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #333;
+        }
+        .puzzle-btn {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: #9b59b6;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 4px 10px rgba(155, 89, 182, 0.3);
+            transition: 0.2s;
+        }
+        .puzzle-btn:active { transform: scale(0.98); }
+        .puzzle-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 65px);
+            gap: 6px;
+            background-color: #333;
+            padding: 6px;
+            border-radius: 12px;
+        }
+        .puzzle-tile {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #ffffff;
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #333;
+            border-radius: 8px;
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.1s;
+        }
+        .puzzle-tile:hover {
+            background-color: #f0f0f0;
+        }
+        .puzzle-tile.empty {
+            background-color: #cccccc;
+            cursor: default;
+        }
     </style>
 </head>
 <body>
@@ -262,7 +318,7 @@
             <div id="dice-sum">¡Toca el botón para jugar!</div>
         </div>
 
-        <!-- 5초 맞추기 게임 (수정됨) -->
+        <!-- 5초 맞추기 게임 -->
         <div class="section timer-box">
             <h2>⏱️ ¡Detén en el 5! (Reto de 5 segundos)</h2>
             <div class="timer-display" id="timer-display">0.00s</div>
@@ -283,6 +339,16 @@
                 <button class="color-game-btn no" onclick="checkColorAnswer(false)">¡No! (Diferentes)</button>
             </div>
             <div id="color-result">Aciertos: 0</div>
+        </div>
+
+        <!-- 숫자 슬라이딩 퍼즐 게임 (신규 추가) -->
+        <div class="section puzzle-box">
+            <h2>🧩 Rompecabezas Numérico</h2>
+            <div class="puzzle-info-panel">
+                <span id="puzzle-moves">Movimientos: 0</span>
+                <button class="puzzle-btn" onclick="shufflePuzzle()">Reiniciar Puzzle</button>
+            </div>
+            <div class="puzzle-board" id="puzzle-board"></div>
         </div>
     </div>
 
@@ -374,7 +440,6 @@
             }, 300);
         }
 
-        // 5초 타이머 로직 (목표값 5로 변경됨)
         let startTime = 0;
         let timerInterval = null;
         let isRunning = false;
@@ -402,7 +467,7 @@
 
             const elapsedTime = (Date.now() - startTime) / 1000;
             const resultText = document.getElementById('timer-result');
-            const diff = Math.abs(5 - elapsedTime); // 5초 기준으로 오차 계산
+            const diff = Math.abs(5 - elapsedTime);
             
             if (diff < 0.05) {
                 resultText.style.color = "#20bf6b";
@@ -472,6 +537,99 @@
             }
             nextColorRound();
         }
+
+        /* 숫자 슬라이딩 퍼즐 로직 추가 */
+        let puzzleBoard = [];
+        let puzzleMoves = 0;
+
+        function initPuzzle() {
+            puzzleBoard = [...Array(15).keys()].map(x => x + 1);
+            puzzleBoard.push(0); // 빈칸은 0
+            shufflePuzzle();
+        }
+
+        function shufflePuzzle() {
+            puzzleMoves = 0;
+            updatePuzzleMoves();
+            
+            // 풀 수 있는 퍼즐 상태를 만들기 위해 빈칸 기준 무작위 이동 반복
+            for (let i = 0; i < 1000; i++) {
+                let emptyIdx = puzzleBoard.indexOf(0);
+                let r = Math.floor(emptyIdx / 4);
+                let c = emptyIdx % 4;
+                
+                let neighbors = [];
+                if (r > 0) neighbors.push((r - 1) * 4 + c);
+                if (r < 3) neighbors.push((r + 1) * 4 + c);
+                if (c > 0) neighbors.push(r * 4 + (c - 1));
+                if (c < 3) neighbors.push(r * 4 + (c + 1));
+                
+                let randomNeighbor = neighbors[Math.floor(Math.random() * neighbors.length)];
+                
+                [puzzleBoard[emptyIdx], puzzleBoard[randomNeighbor]] = [puzzleBoard[randomNeighbor], puzzleBoard[emptyIdx]];
+            }
+
+            if (checkPuzzleWin()) {
+                shufflePuzzle();
+                return;
+            }
+            renderPuzzleBoard();
+        }
+
+        function renderPuzzleBoard() {
+            const boardContainer = document.getElementById("puzzle-board");
+            boardContainer.innerHTML = "";
+
+            puzzleBoard.forEach((val, idx) => {
+                const tile = document.createElement("div");
+                tile.classList.add("puzzle-tile");
+                if (val === 0) {
+                    tile.classList.add("empty");
+                    tile.textContent = "";
+                } else {
+                    tile.textContent = val;
+                    tile.onclick = () => clickPuzzleTile(idx);
+                }
+                boardContainer.appendChild(tile);
+            });
+        }
+
+        function clickPuzzleTile(idx) {
+            let emptyIdx = puzzleBoard.indexOf(0);
+            let r = Math.floor(idx / 4);
+            let c = idx % 4;
+            let emptyR = Math.floor(emptyIdx / 4);
+            let emptyC = emptyIdx % 4;
+
+            // 상하좌우 인접 확인
+            if (Math.abs(r - emptyR) + Math.abs(c - emptyC) === 1) {
+                [puzzleBoard[emptyIdx], puzzleBoard[idx]] = [puzzleBoard[idx], puzzleBoard[emptyIdx]];
+                puzzleMoves++;
+                updatePuzzleMoves();
+                renderPuzzleBoard();
+
+                if (checkPuzzleWin()) {
+                    setTimeout(() => {
+                        alert(`🎉 ¡Increíble! ¡Completaste el puzzle en ${puzzleMoves} movimientos!`);
+                        shufflePuzzle();
+                    }, 100);
+                }
+            }
+        }
+
+        function updatePuzzleMoves() {
+            document.getElementById("puzzle-moves").textContent = `Movimientos: ${puzzleMoves}`;
+        }
+
+        function checkPuzzleWin() {
+            for (let i = 0; i < 15; i++) {
+                if (puzzleBoard[i] !== i + 1) return false;
+            }
+            return puzzleBoard[15] === 0;
+        }
+
+        // 페이지 로드시 퍼즐 초기화 실행
+        initPuzzle();
     </script>
 
 </body>
