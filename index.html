@@ -103,12 +103,58 @@
             color: #2c3e50;
             min-height: 25px;
         }
+
+        /* 주사위 게임 스타일 */
+        .dice-box {
+            text-align: center;
+        }
+        .dice-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 15px 0;
+        }
+        .dice {
+            width: 65px;
+            height: 65px;
+            background: #fff;
+            border: 3px solid #ff6b6b;
+            border-radius: 12px;
+            font-size: 2.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
+        }
+        .dice.rolling {
+            transform: rotate(360deg) scale(1.1);
+        }
+        .dice-btn {
+            background-color: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 10px 20px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(255, 107, 107, 0.3);
+            width: 100%;
+        }
+        .dice-btn:active { transform: scale(0.98); }
+        #dice-sum {
+            margin-top: 8px;
+            font-size: 0.9rem;
+            color: #555;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <!-- 상단 날짜 및 멕시코시티 날씨 (작게 수정) -->
+        <!-- 상단 날짜 및 멕시코시티 날씨 -->
         <div class="header-banner">
             <h1 id="current-date">Cargando fecha...</h1>
             <div class="weather-info">🌤️ Ciudad de México · Soleado (24°C)</div>
@@ -128,6 +174,17 @@
             <button class="mission-btn" onclick="pickMission()">¡Sacar una Misión!</button>
             <div id="mission-result">¡Presiona el botón para descubrir la misión!</div>
         </div>
+
+        <!-- 주사위 던지기 게임 -->
+        <div class="section dice-box">
+            <h2>🎲 ¡Tira los Dados!</h2>
+            <div class="dice-container">
+                <div class="dice" id="dice1">⚀</div>
+                <div class="dice" id="dice2">⚅</div>
+            </div>
+            <button class="dice-btn" onclick="rollDice()">¡Lanzar Dados!</button>
+            <div id="dice-sum">¡Toca el botón para jugar!</div>
+        </div>
     </div>
 
     <script>
@@ -137,18 +194,14 @@
         const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
         dateElement.innerText = today.toLocaleDateString('es-ES', options);
 
-        // 2. 여러 사진 리스트 (여기에 사진 주소와 설명을 마음껏 추가할 수 있습니다!)
+        // 2. 여러 사진 리스트 (사진 파일명이나 주소를 이곳에 넣어주세요)
         const photoList = [
-            { url: "https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=500&q=80", caption: "¡Divertido día en el parque! ✨" },
-            { url: "https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?auto=format&fit=crop&w=500&q=80", caption: "Paseo familiar inolvidable 🌲" },
-            { url: "https://images.unsplash.com/photo-1543353071-10c8ba85a904?auto=format&fit=crop&w=500&q=80", caption: "¡Disfrutando una rica comida juntos! 🍕" },
-            { url: "https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=500&q=80", caption: "Jugando y riendo en casa 🧸" },
-            { url: "https://images.unsplash.com/photo-1472152049653-e31a8c98c199?auto=format&fit=crop&w=500&q=80", caption: "Atardecer hermoso en familia 🌅" }
+            { url: "family1.jpg", caption: "¡Divertido día en el parque! ✨" },
+            { url: "family2.jpg", caption: "Paseo familiar inolvidable 🌲" },
+            { url: "family3.jpg", caption: "¡Disfrutando una rica comida juntos! 🍕" }
         ];
 
-        // 접속할 때마다 랜덤으로 2장을 골라 화면에 띄우는 함수
         function loadRandomPhotos() {
-            // 배열을 섞어서 앞의 2개 선택
             let shuffled = [...photoList].sort(() => 0.5 - Math.random());
             let selectedPhotos = shuffled.slice(0, 2);
 
@@ -168,10 +221,9 @@
             });
         }
 
-        // 페이지가 열릴 때 실행
         loadRandomPhotos();
 
-        // 3. 랜덤 미션 뽑기 기능 (스페인어)
+        // 3. 랜덤 미션 뽑기 기능
         const missions = [
             "🤗 ¡Dale un fuerte abrazo a un miembro de la familia y dile algo lindo!",
             "😜 ¡Tómate una selfie con la cara más graciosa y muéstrala!",
@@ -185,6 +237,34 @@
             const resultBox = document.getElementById('mission-result');
             resultBox.style.color = "#ff6b6b";
             resultBox.innerText = missions[randomIndex];
+        }
+
+        // 4. 주사위 굴리기 게임 기능
+        const diceFaces = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+
+        function rollDice() {
+            const d1 = document.getElementById('dice1');
+            const d2 = document.getElementById('dice2');
+            const sumText = document.getElementById('dice-sum');
+
+            // 굴러가는 애니메이션 효과 부여
+            d1.classList.add('rolling');
+            d2.classList.add('rolling');
+            sumText.innerText = "🎲 Rodando los dados...";
+
+            setTimeout(() => {
+                d1.classList.remove('rolling');
+                d2.classList.remove('rolling');
+
+                const rand1 = Math.floor(Math.random() * 6);
+                const rand2 = Math.floor(Math.random() * 6);
+
+                d1.innerText = diceFaces[rand1];
+                d2.innerText = diceFaces[rand2];
+
+                const total = rand1 + rand2 + 2;
+                sumText.innerText = `✨ ¡Resultado total: ${total} puntos! ✨`;
+            }, 300); // 0.3초 동안 구르는 효과
         }
     </script>
 
